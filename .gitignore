@@ -1,0 +1,13 @@
+# env
+*env*
+env/*
+*venv*
+venv/*
+
+# backup
+*.BAK
+BAK*
+
+# lmstudio
+lmstudio/
+lmstudio/*

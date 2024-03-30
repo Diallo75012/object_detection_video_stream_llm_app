@@ -1,0 +1,533 @@
+### Installation
+
+# ultralytics (for Yolo)
+pip install ultralytics
+# opencv
+pip install opencv-python
+# install postgresql
+sudo apt update
+sudo apt install postgresql postgresql-contrib -y
+psql --version
+# install connector engine
+sudo apt-get install build-essential -y
+sudo apt-get install libpq-dev -y
+pip install psycopg2-binary
+pip install psycopg2
+# install openvino if need to convert models or create models (source for all models list and pick the one that we want to download and use:https://docs.openvino.ai/2022.3/omz_models_group_public.html)
+pip install openvino-dev
+eg:
+An example of using the Model Downloader:
+omz_downloader --name <model_name>
+An example of using the Model Converter:
+omz_converter --name <model_name>
+# install pytorch and torchvision for cpu only
+pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+# install if needed to use GPU and have installed rocm for windows based GPU
+pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm5.7
+# if want to install rocm, source: https://askubuntu.com/questions/1429376/how-can-i-install-amd-rocm-5-on-ubuntu-22-04
+mkdir ~/ROCm && cd ~/ROCm
+sudo apt update
+wget https://repo.radeon.com/amdgpu-install/22.20.1/ubuntu/focal/amdgpu-install_22.20.50201-1_all.deb
+sudo chmod +x amdgpu-install_22.20.50201-1_all.deb
+sudo apt-get install ./amdgpu-install_22.20.50201-1_all.deb
+- Update the amdgpu_install binary code:
+sudo gedit /usr/bin/amdgpu-install
+- change the function for this short one and comment the original function:
+#function debian_build_package_list() {
+	#if [[ ! "${OPTIONS[*]}" =~ "no-dkms" ]]; then
+		#if apt-cache show linux-headers-$(uname -r) &>/dev/null; then
+			#PACKAGES=(${PACKAGES[*]} linux-headers-$(uname -r))
+		#fi
+		#if apt-cache show linux-modules-extra-$(uname -r) &>/dev/null
+		#then
+			#PACKAGES=(${PACKAGES[*]} linux-modules-extra-$(uname -r))
+		#fi
+	#fi
+#}
+
+function debian_build_package_list() { echo 'empty function'; }
+- add ROCm repository
+echo 'deb [arch=amd64] https://repo.radeon.com/rocm/apt/5.1.1 ubuntu main' | sudo tee /etc/apt/sources.list.d/rocm.list
+- download th e.def file for ROCm package
+apt download rocm-llvm5.1.1
+
+# Ubuntu Native package installtion of install ROCm on ubuntu22.04: source : https://rocm.docs.amd.com/projects/install-on-linux/en/latest/tutorial/quick-start.html && https://rocm.docs.amd.com/projects/install-on-linux/en/latest/how-to/native-install/ubuntu.html
+sudo apt install "linux-headers-$(uname -r)" "linux-modules-extra-$(uname -r)"
+# See prerequisites. Adding current user to Video and Render groups
+sudo usermod -a -G render,video $LOGNAME
+wget https://repo.radeon.com/amdgpu-install/6.0.2/ubuntu/jammy/amdgpu-install_6.0.60002-1_all.deb
+sudo chmod +x ./amdgpu-install_6.0.60002-1_all.deb
+sudo apt install ./amdgpu-install_6.0.60002-1_all.deb
+sudo apt update
+sudo apt install amdgpu-dkms
+sudo apt install rocm
+echo "Please reboot system for all settings to take effect."
+# OR AMDGPU Installation of ROCm
+sudo apt update
+wget https://repo.radeon.com/amdgpu-install/6.0.2/ubuntu/jammy/amdgpu-install_6.0.60002-1_all.deb
+sudo chmod +x ./amdgpu-install_6.0.60002-1_all.deb
+sudo apt install ./amdgpu-install_6.0.60002-1_all.deb
+sudo amdgpu-install --usecase=graphics,rocm
+apt show rocm-libs -a # check version
+
+____________________________________________
+# 7 steps in order to vizualize object detection: load model, load video, read frames, detect object and track object, plot results, visualize
+from ultralytics import YOLO
+import cv2
+
+
+# 1_load yolov8 model
+model = YOLO('yolov8n.pt')
+
+# 2_load video
+video_path = './test.mp4'
+cap = cv2.VideoCapture(video_path)
+
+ret = True
+# 3_read frames
+while ret:
+    ret, frame = cap.read()
+
+    if ret:
+
+        # 4_detect objects
+        # 5_track objects
+        results = model.track(frame, persist=True)
+
+        # 6_plot results
+        # cv2.rectangle
+        # cv2.putText
+        frame_ = results[0].plot()
+
+        # 7_visualize
+        cv2.imshow('frame', frame_)
+        if cv2.waitKey(25) & 0xFF == ord('q'):
+            break
+___________
+
+source: https://www.youtube.com/watch?v=iBomaK2ARyI
+install ip webcam in phone to get a server through the wifi that will be capturing the video stream of the phone
+, then you need to go to that url and you will see the video capture stream from your phone in the web browser.
+Now inspect the page , find the 'video' and get that link to be used by the code to get the video stream part from your phone (current source link is gotten by passing the mouse over the /video tag)
+
+import cv2
+
+# capture the video in a variable
+capture = cv2.VideoCapture("<http://video-link>")
+# set a frame size 3 for height and 4 for width
+capture.set(3, 640)
+capture.set(4, 480)
+# use a background image in which you will overlay the video
+# imgBackgroung = cv2.read("background.png")
+
+while True:
+  # _ represent a boolean true or false present or not
+  _, frame = capture.read()
+  cv2.inshow('livestream', frame)
+  
+  # for color scale filter here grey
+  # grey = cv2.cvtColor(frame, cv2.COLOR_RGB2GRA)
+  # for grey scale show the grey variable
+  # cv2.inshow('livestream', grey)
+
+  # for mirroing the image horizontally 1, vertically 0,  do both -1
+  # mirror = cv2.flip(<frame or grey>, 1)
+  # then show the mirroring frame
+  # cv2.inshow('livestream', mirror)
+  
+  # to play with the frames and not use too much computational pover we reduce size by 3/4 so 75% and keep only 25%. We also change/convert the color to RGB
+  # frames = cv2.resize(frame, (0,0), None, 0.25, 0.25)
+  # frame = cv2.cvtColor(frames, cv2.COLOR_BGR2RGB)
+
+  # get the current frame and encode it to prepare to compare with db exisiting frames
+  # currentFrame = face_recognition.face_locations(frames)
+  # encodeCurrentFrame = face_recognition.face_encodings(frames, currentFrame)
+
+  # put coordonates where you want the frame video to appear in the imgBackground (eg 65:64+480(that is the width),33:33+640)
+  # imgBackground[<coordinate_of_where_we_want_frame_to_appear>] = frame
+  # add another location where you want the llm response to appear or a dynamic variable to show different responses
+  # imgBackground[<coordinate_of_where_we_want_frame_to_appear>] = llm_response
+
+  # get distance of vectors and see if true or false for frame(a face here) is corresponding to one of the db stored images
+  # for encodeFace, faceLoc in zip(encodeCurrentFrame, currentFrame):
+    # matches = face_recognition.compare_faces(<variable_list_of_encoded_db_frames>, encodeFace) # true or false
+    # faceDis = face_recognition.face_distance(<variable_list_of_encoded_db_frames>, encodeFace) # distances
+
+    # we get the index of the smallest vestor so the closest to the image
+    # matchIndex = np.argmin(faceDis)
+    # if matches[matchIndex]:
+        # print("known face detected")
+        # after you can get the id of matching db data so the vector same as the minimum one from or db
+        # after cv2.rectangle or cvzone to show the image
+        # y1, x2, y2, x1 = faceLoc
+        # y1, x2, y2, x1 = y1*4, x2*4, y2*4, x1*4  # here multiply by 4 has we have reduced the image by 1/4 25%
+        # bbox = 55+x1, 162+y1, x2 - x1, y2 - y1  # this is example but it is actually using our offset for where we wanted the frame to be placed so bbox is "border box"
+        # imgBackground = cvzone.cornerRect(imgBackground, bbox, rt=0)
+
+  # get database data and bucket image corresponding example boiler code thought
+  # <variable> = <db_data>.get(id=<id_of_data_corresponding_to_vector>)
+  # frame_from_bucket = bucket.get(f"images/{id}.png")
+  # vector_frame = np.frombuffer(image_from_bucket.download_as_string(), np.uint8)
+  # corresponding_compared_frame = cv2.imdecode(vector_frame, cv2.COLOR_BGRA2BGR)
+  # show that image in background
+  # imgBackground[<coordinates>] = corresponding_compared_frame
+  # from here we can go and update the time in the database to say that it has been verified for example and put the date time
+
+  # center text example
+  (w, h), _ = cv2.getTextSize(<db_table_field>m cv2.FONT_HERSHEY_COMPLEX, 1, 1)
+  offset = (<full_width> - w) // 2
+  # get user db data plotted to the background using coordinates
+  # cv2.putText(imgBackground, str(<db_table_field>), (530 + offset (only if needed to center add offset variable this is an example), 100), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 255, 255), 2) # this is just example. imagebackground, table field data to show, coordinates, text font style, size, color, thickness
+
+  # breaks if we click on "q" in the keyboard that is how we get out of the while loop and stop the streaming video
+  if cv2.waitKey(1) == ord("q"):
+    break
+
+capture.release()
+cv2.destrouAllWindows()
+
+The idea is to get images encoded and stored to the db and we will compare with the capture image to see if the vectors are the same. so yes vectors as we encode the images using facerecognition
+
+for the database can store id with metadata using a json object so when retrieved can just dump that json and use it as dictionnary to access values:
+data = {
+  "123":
+    {
+      "name": "junko".
+      "location": "shibuya manga kissa",
+      "time_updated": 04-05-2007 23:04:36,
+      "frame_vector": [0.2233, 0.4433....],
+      "bucket": id_in_bucket,
+  }
+}
+OR just normal relational database or bucket for the image so that image is retrieved if vector is similar :
+db fields: id, name, location, time,uploaded, frame
+bucket: id_of_image_same_as_id_in_db
+
+so here we need to store the image vector with all data to db and after export the image by getting the id and storing the image with the same if as in the db. just need to format it so that when we access the db and get the bucket id we can retireve the image easily
+______________________________________________________
+
+
+### YOLO
+
+# what it is able to do and which model to use for those
+- Detection: YOLOv8n
+- Segmentation: YOLOv8n-seg
+- Pose: YOLOv8n-pose
+- OBB (Object Bounding Box: see objects on an angle): YOLOv8n-obb
+- Classification (ImageNet): YOLOv8n-cls
+- Track (live video stream tracker) > eg from doc python Ultralytics:
+from ultralytics import YOLO
+# Load a model
+model = YOLO('yolov8n.pt')  # load an official detection model
+model = YOLO('yolov8n-seg.pt')  # load an official segmentation model
+model = YOLO('path/to/best.pt')  # load a custom model
+# Track with the model
+results = model.track(source="https://youtu.be/LNwODJXcvt4", show=True)
+results = model.track(source="https://youtu.be/LNwODJXcvt4", show=True, tracker="bytetrack.yaml")
+
+
+## vector similarity data exploration, NLP query, SQL query: All Return Dataframe with info
+from ultralytics import Explorer
+# create an Explorer object
+exp = Explorer(data='coco128.yaml', model='yolov8n.pt')
+exp.create_embeddings_table()
+# Image simalarity search 
+similar = exp.get_similar(img='https://ultralytics.com/images/bus.jpg', limit=10)
+print(similar.head())
+# OR Image Search using multiple indices
+similar = exp.get_similar(
+                        img=['https://ultralytics.com/images/bus.jpg',
+                             'https://ultralytics.com/images/bus.jpg'],
+                        limit=10
+                        )
+print(similar.head())
+# dataset similarity search
+similar = exp.get_similar(idx=1, limit=10)
+print(similar.head())
+# OR Dataset search using multiple indices
+similar = exp.get_similar(idx=[1,10], limit=10)
+print(similar.head())
+# Using NLP to ask a question and get retrieval based on that
+df = exp.ask_ai("show me 10 images containing exactly 2 persons")
+print(df.head())
+# Using SQL query
+table = exp.sql_query("WHERE labels LIKE '%dog%' AND labels LIKE '%park%' LIMIT 10")
+print(table.head())
+
+## Example Yolo YAML config file
+
+# Define the dataset's root directory
+path: /path/to/dataset 
+
+# Specify paths to training and validation image directories
+train: images/train  # Training images directory (relative to 'path')
+val: images/val      # Validation images directory (relative to 'path')
+
+# Optional: specify a path for test images
+test: images/test    # Test images directory (optional, relative to 'path')
+
+# List of class names, mapped by their index
+names:
+  0: person          # Class 0 is person
+  1: bicycle         # Class 1 is bicycle
+  # Add more classes as needed
+
+# Example of additional fields you might include:
+nc: 2                # Number of classes
+stride: 32           # Stride, related to model architecture
+
+# Advanced configurations might also detail:
+# - Specific augmentation or preprocessing steps
+# - Hyperparameters for training
+# - Any additional metadata required by your project
+
+# Augmentation settings
+augmentation:
+  hue: 0.1            # Hue adjustment
+  saturation: 1.5    # Saturation adjustment
+  exposure: 1.5      # Exposure adjustment
+  flipud: 0.0        # Probability of flipping image vertically
+  fliplr: 0.5        # Probability of flipping image horizontally
+  mosaic: 1.0        # Probability of applying mosaic augmentation
+  mixup: 0.2         # Probability of applying mixup augmentation
+
+# Training hyperparameters
+hyperparameters:
+  lr0: 0.01          # Initial learning rate
+  lrf: 0.2           # Final learning rate
+  momentum: 0.937    # SGD momentum
+  weight_decay: 0.0005
+  warmup_epochs: 3   # Number of warmup epochs
+  warmup_momentum: 0.8
+  warmup_bias_lr: 0.1
+
+# Additional metadata for the project
+metadata:
+  author: "Your Name"
+  version: "1.0"
+  description: "Custom YOLO dataset for detecting persons and bicycles"
+
+
+# start app with pyhton3 <name_of_script_file>.py
+# use command to watch folder files creation and update and deletion..: inotifywait -m -r <path_of_folder>
+
+## boilerplate code that works:
+# firt run is going to download the model automatically so need second run to start the app
+# test video https://www.youtube.com/watch?v=q6njK5acv-A
+from ultralytics import YOLO
+import cv2
+import itertools
+
+# 1_load yolov8 model
+model = YOLO('yolov8n.pt')
+
+# 2_load video
+video_path = 'https://www.youtube.com/watch?v=q6njK5acv-A'
+cap = cv2.VideoCapture(video_path)
+ret=True
+while ret:
+  ret, frame = cap.read()
+  # Perform tracking with the model
+  results = model.track(source=video_path, show=True, persist=True, stream=True)  # Tracking with default tracker. with stream true results variable is returning a generator, without it is a list returned but you can loop on the generator using the python library itertools
+
+ # Process results generator: here we just get the 10 first frames otherwise there is too many images and can't control or hard to stop process...
+  # for generator so stream=True or otherwise just turn it into a list by using  list(results) and iterating through it to not exaust the generator
+  #for result in itertools.islice(results, 10):
+  for result in list(results)[:10]:
+  # for list so stream=False
+  #for result in results[:10]:
+    boxes = result.boxes  # Boxes object for bounding box outputs
+    masks = result.masks  # Masks object for segmentation masks outputs
+    keypoints = result.keypoints  # Keypoints object for pose outputs
+    probs = result.probs  # Probs object for classification outputs
+    result.show()  # display to screen
+    result.save(filename='./frames/result.jpg')  # save to disk
+
+  ret, frame = cap.read()
+  if ret:
+    result_plot = results[0].plot()
+    cv2.imshow('frame', frame_)
+    if cv2.waitKey(25) & 0xFF == ord('q'):
+      ret = False
+      break
+
+## for key pressed on keyboard, the ord() function of python converts the key form the keyboard to ASCII so that it can be compared
+32 = Space
+48-57 = 0-9
+65-90 = A-Z
+97-122 = a-z
+27 = Escape key
+
+eg:
+import cv2
+
+# Assuming 'frame' is an image or frame you want to display
+cv2.imshow('Frame', frame)
+
+key = cv2.waitKey(0) # Waits indefinitely for a key press
+
+if key == 27: # ESC key
+    print("ESC key pressed. Exiting...")
+elif key == ord('s'): # 's' key
+    cv2.imwrite('saved_frame.jpg', frame)
+    print("Image saved as 'saved_frame.jpg'")
+elif key == -1:
+    print("No key was pressed within the specified time.")
+
+# Result variable .name
+0: 'person', 
+1: 'bicycle', 
+2: 'car', 
+3: 'motorcycle', 
+4: 'airplane', 
+5: 'bus', 
+6: 'train', 
+7: 'truck', 
+8: 'boat', 
+9: 'traffic light', 
+10: 'fire hydrant', 
+11: 'stop sign', 
+12: 'parking meter', 
+13: 'bench', 
+14: 'bird', 
+15: 'cat', 
+16: 'dog', 
+17: 'horse', 
+18: 'sheep', 
+19: 'cow', 
+20: 'elephant', 
+21: 'bear', 
+22: 'zebra', 
+23: 'giraffe', 
+24: 'backpack', 
+25: 'umbrella', 
+26: 'handbag', 
+27: 'tie', 
+28: 'suitcase', 
+29: 'frisbee', 
+30: 'skis', 
+31: 'snowboard', 
+32: 'sports ball', 
+33: 'kite', 
+34: 'baseball bat', 
+35: 'baseball glove', 
+36: 'skateboard', 
+37: 'surfboard', 
+38: 'tennis racket', 
+39: 'bottle', 
+40: 'wine glass', 
+41: 'cup', 
+42: 'fork', 
+43: 'knife', 
+44: 'spoon', 
+45: 'bowl', 
+46: 'banana', 
+47: 'apple', 
+48: 'sandwich', 
+49: 'orange', 
+50: 'broccoli', 
+51: 'carrot', 
+52: 'hot dog', 
+53: 'pizza', 
+54: 'donut', 
+55: 'cake', 
+56: 'chair', 
+57: 'couch', 
+58: 'potted plant', 
+59: 'bed', 
+60: 'dining table', 
+61: 'toilet', 
+62: 'tv', 
+63: 'laptop', 
+64: 'mouse', 
+65: 'remote', 
+66: 'keyboard', 
+67: 'cell phone', 
+68: 'microwave', 
+69: 'oven', 
+70: 'toaster', 
+71: 'sink', 
+72: 'refrigerator', 
+73: 'book', 
+74: 'clock', 
+75: 'vase', 
+76: 'scissors', 
+77: 'teddy bear', 
+78: 'hair drier', 
+79: 'toothbrush'
+
+# result other variables
+boxes, keypoints, masks, obb, orig_shape, path, probs, save_dir: 'runs/detect/track', speed: {'preprocess': 3.8318634033203125, 'inference': 62.86168098449707, 'postprocess': 0.8945465087890625}
+
+# get the array of frame vectorize so use .org_img
+for result in results:
+  result.orig_img
+
+# All Methods and Attributes of returned object of one result of all results
+A class for storing and manipulating inference results.
+
+Attributes:
+orig_img (numpy.ndarray): Original image as a numpy array.
+orig_shape (tuple): Original image shape in (height, width) format.
+boxes (Boxes, optional): Object containing detection bounding boxes.
+masks (Masks, optional): Object containing detection masks.
+probs (Probs, optional): Object containing class probabilities for classification tasks.
+keypoints (Keypoints, optional): Object containing detected keypoints for each object.
+speed (dict): Dictionary of preprocess, inference, and postprocess speeds (ms/image).
+names (dict): Dictionary of class names.
+path (str): Path to the image file.
+
+Methods:
+update(boxes=None, masks=None, probs=None, obb=None): Updates object attributes with new detection results.
+cpu(): Returns a copy of the Results object with all tensors on CPU memory.
+numpy(): Returns a copy of the Results object with all tensors as numpy arrays.
+cuda(): Returns a copy of the Results object with all tensors on GPU memory.
+to(*args, **kwargs): Returns a copy of the Results object with tensors on a specified device and dtype.
+new(): Returns a new Results object with the same image, path, and names.
+plot(...): Plots detection results on an input image, returning an annotated image.
+show(): Show annotated results to screen.
+save(filename): Save annotated results to file.
+verbose(): Returns a log string for each task, detailing detections and classifications.
+save_txt(txt_file, save_conf=False): Saves detection results to a text file.
+save_crop(save_dir, file_name=Path("im.jpg")): Saves cropped detection images.
+tojson(normalize=False): Converts detection results to JSON format.
+
+# mount external drive to linux wsl2
+sudo mount -t drvfs E: /mnt/e
+# mount on vmware worstation pro ubuntu
+turn off the vm and go to vm settings > options > enable file sharing with host and select drive
+turn on vm then run: sudo mkdir /mnt/e && sudo vmhgfs-fuse .host:/E /mnt/e -o allow_other
+# option and warning be careful, can add this command to `/etc/fstab`: 
+sudo nano /etc/fstab
+then add this line to get it mounted at each vm start:
+.host:/E /mnt/e fuse.vmhgfs-fuse allow_other 0 0
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
